@@ -1,5 +1,6 @@
 import pygame
 import math
+from particle import Particle  # certifique-se de que o módulo Particle esteja importável
 
 class Rocket:
     def __init__(self, x, y, width, height, base_surface,
@@ -34,6 +35,12 @@ class Rocket:
         # Superfície base (imagem) do foguete
         self.base_surface = base_surface
 
+        # Lista para armazenar as partículas do rabo
+        self.particles = []
+
+        # Flag para indicar se está aplicando impulso
+        self.thrusting = False
+
     def handle_input(self):
         keys = pygame.key.get_pressed()
 
@@ -50,12 +57,15 @@ class Rocket:
             self.angle += 360
 
         # Impulso: aplica aceleração na direção apontada pelo foguete
+        # Além disso, define a flag 'thrusting' para emitir partículas
+        self.thrusting = False
         if keys[pygame.K_UP] or keys[pygame.K_w]:
+            self.thrusting = True
             self.vx += -self.thrust * math.sin(math.radians(self.angle))
             self.vy += -self.thrust * math.cos(math.radians(self.angle))
 
     def update(self, ground_level):
-        """Atualiza a física e verifica colisões/explosão."""
+        """Atualiza a física, verifica colisões/explosão e atualiza as partículas."""
         if not self.exploded:
             self.handle_input()
 
@@ -82,8 +92,40 @@ class Rocket:
             # Se explodiu, atualiza o timer da explosão
             self.explosion_timer -= 1
 
+        # --- Emissão de partículas (rabo do foguete) ---
+        if self.thrusting and not self.exploded:
+            # Calcular a posição de emissão das partículas:
+            # Usamos o centro do foguete e aplicamos um deslocamento na direção oposta à ponta
+            # Como 0° aponta para cima, a direção de impulso é (-sin, -cos) e o rabo fica em (sin, cos)
+            tail_offset = self.height / 2  # distância a partir do centro (pode ser ajustada)
+            center_x = self.x + self.width / 2
+            center_y = self.y + self.height / 2
+            tail_x = center_x + tail_offset * math.sin(math.radians(self.angle))
+            tail_y = center_y + tail_offset * math.cos(math.radians(self.angle))
+            # Emitir algumas partículas por frame (ajuste o número conforme necessário)
+            for _ in range(3):
+                self.particles.append(
+                    Particle(
+                        tail_x,
+                        tail_y,
+                        base_angle=self.angle + 180,  # oposto à direção do foguete
+                        speed=2,
+                        lifetime=30,
+                        color=(255, 165, 0)  # cor laranja
+                    )
+                )
+
+        # Atualiza as partículas e remove as que morreram
+        for particle in self.particles:
+            particle.update()
+        self.particles = [p for p in self.particles if not p.is_dead()]
+
     def draw(self, surface):
-        """Renderiza o foguete (ou a explosão, se for o caso)."""
+        """Renderiza o foguete, suas partículas (rabo) e a explosão, se houver."""
+        # Primeiro desenha as partículas do rabo (para ficar atrás do foguete)
+        for particle in self.particles:
+            particle.draw(surface)
+
         if self.exploded:
             # Efeito simples de explosão: um círculo que aumenta de tamanho
             rocket_center_x = int(self.x + self.width / 2)
