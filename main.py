@@ -8,14 +8,9 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 GROUND_HEIGHT = 50
 
-# Dimensões do foguete
-ROCKET_WIDTH = 20
-ROCKET_HEIGHT = 40
-
 # Cores
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
-RED = (255, 0, 0)
 
 # Configurações do jogo
 FPS = 60
@@ -30,9 +25,18 @@ clock = pygame.time.Clock()
 font = pygame.font.SysFont("Arial", 20)
 hud = HUD(font)
 
-# Cria a superfície base do foguete (com transparência)
-base_rocket_surface = pygame.Surface((ROCKET_WIDTH, ROCKET_HEIGHT), pygame.SRCALPHA)
-base_rocket_surface.fill(RED)
+# === Carregamento e redimensionamento da imagem do foguete ===
+# Carrega a imagem do foguete com transparência
+base_rocket_surface = pygame.image.load("rocket.png").convert_alpha()
+
+# Redimensiona a imagem para metade do tamanho original
+original_width = base_rocket_surface.get_width()
+original_height = base_rocket_surface.get_height()
+base_rocket_surface = pygame.transform.scale(base_rocket_surface, (original_width // 2, original_height // 2))
+
+# Atualiza os valores de largura e altura do foguete conforme a imagem redimensionada
+ROCKET_WIDTH = base_rocket_surface.get_width()
+ROCKET_HEIGHT = base_rocket_surface.get_height()
 
 # Posição inicial do foguete (centralizado horizontalmente e sobre o solo)
 rocket_start_x = SCREEN_WIDTH // 2 - ROCKET_WIDTH // 2
@@ -67,7 +71,7 @@ while running:
     # Define o nível do solo para o foguete
     ground_level = SCREEN_HEIGHT - GROUND_HEIGHT - ROCKET_HEIGHT
 
-    # Atualiza o foguete (fisica, colisão e, se necessário, explosão)
+    # Atualiza o foguete (física, colisão e, se necessário, explosão)
     rocket.update(ground_level)
 
     # Se o foguete explodiu e o timer terminou, encerra o jogo
